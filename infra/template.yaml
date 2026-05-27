@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Smart URL Shortener — Lambda + API Gateway + DynamoDB
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    Environment:
+      Variables:
+        URLS_TABLE:
+          Ref: UrlsTable
+        ANALYTICS_TABLE:
+          Ref: AnalyticsTable
+        BASE_URL:
+          Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+Resources:
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+  UrlsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: urls
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  AnalyticsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: analytics
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+
+  ShortenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: smart-url-shorten
+      CodeUri: ../src/shorten/
+      Handler: handler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              Ref: UrlsTable
+      Events:
+        ShortenApi:
+          Type: Api
+          Properties:
+            Path: /shorten
+            Method: POST
+            RestApiId:
+              Ref: Api
+
+  RedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: smart-url-redirect
+      CodeUri: ../src/redirect/
+      Handler: handler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              Ref: UrlsTable
+      Events:
+        RedirectApi:
+          Type: Api
+          Properties:
+            Path: /{code}
+            Method: GET
+            RestApiId:
+              Ref: Api
+
+  AnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: smart-url-analytics
+      CodeUri: ../src/analytics/
+      Handler: handler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              Ref: AnalyticsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetRecords
+                - dynamodb:GetShardIterator
+                - dynamodb:DescribeStream
+                - dynamodb:ListStreams
+              Resource:
+                Fn::GetAtt:
+                  - UrlsTable
+                  - StreamArn
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Fn::GetAtt:
+                - UrlsTable
+                - StreamArn
+            StartingPosition: LATEST
+            BatchSize: 10
+
+Outputs:
+  ApiUrl:
+    Description: "URL base dell'API"
+    Value:
+      Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  ShortenUrl:
+    Description: "Endpoint per accorciare un URL"
+    Value:
+      Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
