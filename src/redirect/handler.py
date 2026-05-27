@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 
-from src.shared.config import URLS_TABLE, ANALYTICS_TABLE
+from src.shared.config import URLS_TABLE
 from src.shared.db import get_table
 from src.shared.errors import CodeNotFoundError
 
