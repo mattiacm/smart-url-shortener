@@ -1,17 +1,14 @@
 import json
 import random
 import string
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from pydantic import ValidationError
 
-from src.shared.config import (
-    URLS_TABLE, BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS
-)
+from src.shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
 from src.shared.db import get_table
 from src.shared.errors import InvalidUrlError
 from src.shorten.models import ShortenRequest, ShortenResponse
-
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 

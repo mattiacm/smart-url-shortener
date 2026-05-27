@@ -1,4 +1,5 @@
 import boto3
+
 from src.shared.config import DYNAMODB_ENDPOINT
 
 # boto3 client is created once at module load — reused across warm Lambda invocations.
