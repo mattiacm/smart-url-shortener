@@ -9,12 +9,9 @@ Globals:
     MemorySize: 256
     Environment:
       Variables:
-        URLS_TABLE:
-          Ref: UrlsTable
-        ANALYTICS_TABLE:
-          Ref: AnalyticsTable
-        BASE_URL:
-          Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+        URLS_TABLE: !Ref UrlsTable
+        ANALYTICS_TABLE: !Ref AnalyticsTable
+        BASE_URL: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
 Resources:
 
@@ -64,35 +61,32 @@ Resources:
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
-            TableName:
-              Ref: UrlsTable
+            TableName: !Ref UrlsTable
       Events:
         ShortenApi:
           Type: Api
           Properties:
             Path: /shorten
             Method: POST
-            RestApiId:
-              Ref: Api
+            RestApiId: !Ref Api
 
   RedirectFunction:
     Type: AWS::Serverless::Function
+    DependsOn: Api
     Properties:
       FunctionName: smart-url-redirect
       CodeUri: ../src/redirect/
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
-            TableName:
-              Ref: UrlsTable
+            TableName: !Ref UrlsTable
       Events:
         RedirectApi:
           Type: Api
           Properties:
             Path: /{code}
             Method: GET
-            RestApiId:
-              Ref: Api
+            RestApiId: !Ref Api
 
   AnalyticsFunction:
     Type: AWS::Serverless::Function
@@ -102,8 +96,7 @@ Resources:
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
-            TableName:
-              Ref: AnalyticsTable
+            TableName: !Ref AnalyticsTable
         - Statement:
             - Effect: Allow
               Action:
@@ -111,27 +104,19 @@ Resources:
                 - dynamodb:GetShardIterator
                 - dynamodb:DescribeStream
                 - dynamodb:ListStreams
-              Resource:
-                Fn::GetAtt:
-                  - UrlsTable
-                  - StreamArn
+              Resource: !GetAtt UrlsTable.StreamArn
       Events:
         Stream:
           Type: DynamoDB
           Properties:
-            Stream:
-              Fn::GetAtt:
-                - UrlsTable
-                - StreamArn
+            Stream: !GetAtt UrlsTable.StreamArn
             StartingPosition: LATEST
             BatchSize: 10
 
 Outputs:
   ApiUrl:
     Description: "URL base dell'API"
-    Value:
-      Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
   ShortenUrl:
     Description: "Endpoint per accorciare un URL"
-    Value:
-      Fn::Sub: "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
