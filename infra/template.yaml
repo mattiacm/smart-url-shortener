@@ -19,6 +19,30 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
+      DefinitionBody:
+        openapi: "3.0.1"
+        info:
+          title: "smart-url-shortener"
+          version: "1.0"
+        paths:
+          /shorten:
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ShortenFunction.Arn}/invocations"
+          /{code}:
+            get:
+              parameters:
+                - name: code
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RedirectFunction.Arn}/invocations"
 
   UrlsTable:
     Type: AWS::DynamoDB::Table
@@ -62,17 +86,17 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UrlsTable
-      Events:
-        ShortenApi:
-          Type: Api
-          Properties:
-            Path: /shorten
-            Method: POST
-            RestApiId: !Ref Api
+
+  ShortenFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ShortenFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/POST/shorten"
 
   RedirectFunction:
     Type: AWS::Serverless::Function
-    DependsOn: Api
     Properties:
       FunctionName: smart-url-redirect
       CodeUri: ../src/redirect/
@@ -80,13 +104,14 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UrlsTable
-      Events:
-        RedirectApi:
-          Type: Api
-          Properties:
-            Path: /{code}
-            Method: GET
-            RestApiId: !Ref Api
+
+  RedirectFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt RedirectFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/GET/*"
 
   AnalyticsFunction:
     Type: AWS::Serverless::Function
