@@ -54,16 +54,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-south-1
 
-      - name: SAM Build
+      - name: SAM Build and Deploy
+        working-directory: infra
         run: |
-          cd infra
           sam build --template template.yaml
-
-      - name: SAM Deploy
-        run: |
-          cd infra
           sam deploy \
-            --template infra/template.yaml \
+            --template template.yaml \
             --stack-name smart-url-shortener \
             --capabilities CAPABILITY_IAM \
             --no-confirm-changeset \
