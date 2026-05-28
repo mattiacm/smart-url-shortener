@@ -56,6 +56,9 @@ jobs:
 
       - name: SAM Build and Deploy
         run: |
+          cp -r src/shared src/shorten/
+          cp -r src/shared src/redirect/
+          cp -r src/shared src/analytics/
           sam build --template template.yaml --no-cached
           sam deploy \
             --template .aws-sam/build/template.yaml \
