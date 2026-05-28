@@ -53,7 +53,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: smart-url-shorten
-      CodeUri: ../src/shorten/
+      CodeUri: /src/shorten/
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
@@ -63,7 +63,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: smart-url-redirect
-      CodeUri: ../src/redirect/
+      CodeUri: /src/redirect/
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: smart-url-analytics
-      CodeUri: ../src/analytics/
+      CodeUri: /src/analytics/
       Handler: handler.handler
       Policies:
         - DynamoDBCrudPolicy:
