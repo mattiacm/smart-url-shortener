@@ -54,6 +54,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-south-1
 
+      - name: Debug - show shorten contents
+        run: ls -la src/shorten/
+
       - name: SAM Build and Deploy
         run: |
           cp -r src/shared src/shorten/
