@@ -10,7 +10,6 @@ from .shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
 from .shared.db import get_table
 from .shared.errors import InvalidUrlError
 
-
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 def _generate_code(length: int = CODE_LENGTH) -> str:
