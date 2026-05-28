@@ -11,39 +11,10 @@ Globals:
       Variables:
         URLS_TABLE: !Ref UrlsTable
         ANALYTICS_TABLE: !Ref AnalyticsTable
-        BASE_URL: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
 Resources:
 
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      DefinitionBody:
-        openapi: "3.0.1"
-        info:
-          title: "smart-url-shortener"
-          version: "1.0"
-        paths:
-          /shorten:
-            post:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ShortenFunction.Arn}/invocations"
-          /{code}:
-            get:
-              parameters:
-                - name: code
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RedirectFunction.Arn}/invocations"
-
+  # ── DynamoDB ───────────────────────────────────────────────────────────────
   UrlsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -77,6 +48,7 @@ Resources:
         - AttributeName: date
           KeyType: RANGE
 
+  # ── Lambda Functions ───────────────────────────────────────────────────────
   ShortenFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -87,14 +59,6 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref UrlsTable
 
-  ShortenFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt ShortenFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/POST/shorten"
-
   RedirectFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -104,14 +68,6 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UrlsTable
-
-  RedirectFunctionPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt RedirectFunction.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/GET/*"
 
   AnalyticsFunction:
     Type: AWS::Serverless::Function
@@ -138,10 +94,88 @@ Resources:
             StartingPosition: LATEST
             BatchSize: 10
 
+  # ── API Gateway (CloudFormation nativo, no SAM, evita dipendenze circolari) ─
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: smart-url-shortener
+
+  # POST /shorten
+  ShortenResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: shorten
+
+  ShortenMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ShortenResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ShortenFunction.Arn}/invocations"
+
+  ShortenPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ShortenFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/POST/shorten"
+
+  # GET /{code}
+  CodeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: "{code}"
+
+  RedirectMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref CodeResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RedirectFunction.Arn}/invocations"
+
+  RedirectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt RedirectFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*/GET/*"
+
+  # Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ShortenMethod
+      - RedirectMethod
+    Properties:
+      RestApiId: !Ref RestApi
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref RestApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: Prod
+
 Outputs:
   ApiUrl:
     Description: "URL base dell'API"
-    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
   ShortenUrl:
     Description: "Endpoint per accorciare un URL"
-    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/shorten"
