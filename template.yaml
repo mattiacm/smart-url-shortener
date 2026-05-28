@@ -11,6 +11,7 @@ Globals:
       Variables:
         URLS_TABLE: !Ref UrlsTable
         ANALYTICS_TABLE: !Ref AnalyticsTable
+        BASE_URL: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
 Resources:
 
