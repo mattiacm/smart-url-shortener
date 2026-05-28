@@ -56,9 +56,9 @@ jobs:
 
       - name: SAM Build and Deploy
         run: |
-          sam build --template template.yaml
+          sam build --template template.yaml --no-cached
           sam deploy \
-            --template template.yaml \
+            --template .aws-sam/build/template.yaml \
             --stack-name smart-url-shortener \
             --capabilities CAPABILITY_IAM \
             --no-confirm-changeset \
