@@ -3,21 +3,13 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 
-try:
-    from src.shorten.models import ShortenRequest, ShortenResponse
-except ImportError:
-    from models import ShortenRequest, ShortenResponse
-
 from pydantic import ValidationError
 
-try:
-    from src.shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
-    from src.shared.db import get_table
-    from src.shared.errors import InvalidUrlError
-except ImportError:
-    from shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
-    from shared.db import get_table
-    from shared.errors import InvalidUrlError
+from .models import ShortenRequest, ShortenResponse
+from .shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
+from .shared.db import get_table
+from .shared.errors import InvalidUrlError
+
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 

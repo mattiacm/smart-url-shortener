@@ -8,12 +8,9 @@ analytics Lambda reacts to changes — zero direct coupling between them.
 """
 from datetime import datetime, timezone
 
-try:
-    from src.shared.config import ANALYTICS_TABLE
-    from src.shared.db import get_table
-except ImportError:
-    from shared.config import ANALYTICS_TABLE
-    from shared.db import get_table
+from .shared.config import ANALYTICS_TABLE
+from .shared.db import get_table
+
 
 def handler(event: dict, context) -> None:
     analytics = get_table(ANALYTICS_TABLE)
