@@ -58,6 +58,8 @@ jobs:
         run: ls -la src/shorten/
 
       - name: SAM Build and Deploy
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           cp -r src/shared src/shorten/
           cp -r src/shared src/redirect/

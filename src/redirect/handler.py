@@ -1,9 +1,9 @@
 import json
 from datetime import datetime, timezone
 
-from .shared.config import URLS_TABLE
-from .shared.db import get_table
-from .shared.errors import CodeNotFoundError
+from src.shared.config import URLS_TABLE
+from src.shared.db import get_table
+from src.shared.errors import CodeNotFoundError
 
 
 def _response(status: int, body: dict | None = None, location: str | None = None) -> dict:
