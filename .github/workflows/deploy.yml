@@ -54,16 +54,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-south-1
 
-      - name: Debug - show shorten contents
-        run: ls -la src/shorten/
+      # - name: Debug - show shorten contents
+      #   run: ls -la src/shorten/
+
+      - name: Debug - verify src structure
+        run: |
+          ls -la src/shorten/
+          ls -la src/shorten/src/ 2>/dev/null || echo "src/shorten/src NOT FOUND"
 
       - name: SAM Build and Deploy
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          cp -r src/shared src/shorten/
-          cp -r src/shared src/redirect/
-          cp -r src/shared src/analytics/
+          mkdir -p src/shorten/src src/redirect/src src/analytics/src
+          cp -r src/shared src/shorten/src/shared
+          cp -r src/shared src/redirect/src/shared
+          cp -r src/shared src/analytics/src/shared
           sam build --template template.yaml --no-cached
           sam deploy \
             --template .aws-sam/build/template.yaml \
