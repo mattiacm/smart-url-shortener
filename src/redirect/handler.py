@@ -5,7 +5,7 @@ try:
     from src.shared.config import URLS_TABLE
     from src.shared.db import get_table
     from src.shared.errors import CodeNotFoundError
-except ModuleNotFoundError:
+except ImportError:
     from shared.config import URLS_TABLE
     from shared.db import get_table
     from src.shared.errors import CodeNotFoundError

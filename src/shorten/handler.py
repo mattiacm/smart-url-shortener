@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 try:
     from src.shorten.models import ShortenRequest, ShortenResponse
-except ModuleNotFoundError:
+except ImportError:
     from models import ShortenRequest, ShortenResponse
 
 from pydantic import ValidationError
@@ -14,7 +14,7 @@ try:
     from src.shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
     from src.shared.db import get_table
     from src.shared.errors import InvalidUrlError
-except ModuleNotFoundError:
+except ImportError:
     from shared.config import BASE_URL, CODE_LENGTH, DEFAULT_TTL_DAYS, URLS_TABLE
     from shared.db import get_table
     from shared.errors import InvalidUrlError
