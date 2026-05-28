@@ -55,7 +55,6 @@ jobs:
           aws-region: eu-south-1
 
       - name: SAM Build and Deploy
-        working-directory: infra
         run: |
           sam build --template template.yaml
           sam deploy \
